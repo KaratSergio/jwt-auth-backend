@@ -9,13 +9,13 @@ class UserService {
   async registration(email, password) {
     const candidate = await userModel.findOne({ email });
     if (candidate) {
-      throw new Error(`User with email address $(email) already exists`);
+      throw new Error(`User with email address ${email} already exists`);
     }
     const hashPassword = await bcrypt.hash(password, 3);
     const activationLink = uuidv4();
 
     const user = await userModel.create({ email, password: hashPassword, activationLink });
-    await mailService.sendActivationMail(email, activationLink);
+    await mailService.sendActivationMail(email, `${process.env.API_URL}/api/activate/${activationLink}`);
 
     const userDto = new UserDto(user);
     const tokens = tokenService.generateToken({ ...userDto });
