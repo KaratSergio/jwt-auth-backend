@@ -4,6 +4,7 @@ import { ApiError } from '../utils/api-error.js';
 import { checkIfUserExists } from '../utils/user-utils.js';
 import { createUserSession } from '../utils/session-utils.js';
 import { hashUserPassword, comparePassword } from '../utils/password-utils.js';
+import tokenService from './token-service.js';
 
 class UserService {
   async registration(email, password) {
@@ -42,6 +43,11 @@ class UserService {
     }
     user.isActivated = true;
     await user.save();
+  }
+
+  async logout(refreshToken) {
+    const token = await tokenService.removeToken(refreshToken);
+    return token;
   }
 }
 
