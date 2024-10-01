@@ -1,11 +1,18 @@
 import userService from '../service/user-service.js';
 import dotenv from 'dotenv';
+import { validationResult } from 'express-validator';
+import { ApiError } from '../utils/api-error.js';
 
 dotenv.config();
 
 class UserController {
   async registration(req, res, next) {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return next(ApiError.BadRequest('validation error', errors.array()));
+      }
+
       const { email, password } = req.body;
       const userData = await userService.registration(email, password);
       res.cookie('refreshToken', userData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
