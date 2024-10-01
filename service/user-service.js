@@ -1,28 +1,38 @@
-import userModel from '../models/user-model.js';
-import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import mailService from './mail-service.js';
-import tokenService from './token-service.js';
-import UserDto from '../dto/user-dto.js';
 import { ApiError } from '../utils/api-error.js';
+import { checkIfUserExists } from '../utils/user-utils.js';
+import { createUserSession } from '../utils/session-utils.js';
+import { hashUserPassword, comparePassword } from '../utils/password-utils.js';
 
 class UserService {
   async registration(email, password) {
-    const candidate = await userModel.findOne({ email });
+    const candidate = await checkIfUserExists(email);
     if (candidate) {
       throw ApiError.BadRequest(`User with email address ${email} already exists`);
     }
-    const hashPassword = await bcrypt.hash(password, 3);
+
+    const hashedPassword = await hashUserPassword(password);
     const activationLink = uuidv4();
 
-    const user = await userModel.create({ email, password: hashPassword, activationLink });
+    const user = await userModel.create({ email, password: hashedPassword, activationLink });
     await mailService.sendActivationMail(email, `${process.env.API_URL}/api/activate/${activationLink}`);
 
-    const userDto = new UserDto(user);
-    const tokens = tokenService.generateToken({ ...userDto });
-    await tokenService.saveToken(userDto.id, tokens.refreshToken);
+    return createUserSession(user);
+  }
 
-    return { ...tokens, user: userDto };
+  async login(email, password) {
+    const user = await checkIfUserExists(email);
+    if (!user) {
+      throw ApiError.BadRequest('User with this email does not exist');
+    }
+
+    const isPassEquals = await comparePassword(password, user.password);
+    if (!isPassEquals) {
+      throw ApiError.BadRequest('Incorrect email or password');
+    }
+
+    return createUserSession(user);
   }
 
   async activate(activationLink) {
