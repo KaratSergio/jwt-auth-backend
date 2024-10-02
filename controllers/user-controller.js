@@ -1,7 +1,7 @@
 import userService from '../service/user-service.js';
-import dotenv from 'dotenv';
 import { validationResult } from 'express-validator';
 import { ApiError } from '../utils/api-error.js';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -73,8 +73,11 @@ class UserController {
 
   async getUsers(req, res, next) {
     try {
-      res.json(['test', 'test2']);
-    } catch (error) {}
+      const users = await userService.getAllUsers();
+      return res.json(users);
+    } catch (error) {
+      next(error);
+    }
   }
 }
 

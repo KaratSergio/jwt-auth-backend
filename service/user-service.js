@@ -5,9 +5,12 @@ import { checkIfUserExists } from '../utils/user-utils.js';
 import { createUserSession } from '../utils/session-utils.js';
 import { hashUserPassword, comparePassword } from '../utils/password-utils.js';
 import tokenService from './token-service.js';
+import userModel from '../models/user-model.js';
 
 class UserService {
   async registration(email, password) {
+    console.log('Starting registration process');
+
     const candidate = await checkIfUserExists(email);
     if (candidate) {
       throw ApiError.BadRequest(`User with email address ${email} already exists`);
@@ -62,6 +65,11 @@ class UserService {
     const user = await userModel.findById(userData.id);
 
     return createUserSession(user);
+  }
+
+  async getAllUsers() {
+    const users = await userModel.find();
+    return users;
   }
 }
 
