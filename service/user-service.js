@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import mailService from './mail-service.js';
+import { sendActivationMail } from './mail-service.js';
 import { ApiError } from '../utils/api-error.js';
 import { checkIfUserExists } from '../utils/user-utils.js';
 import { createUserSession } from '../utils/session-utils.js';
@@ -20,7 +20,7 @@ class UserService {
     const activationLink = uuidv4();
 
     const user = await userModel.create({ email, password: hashedPassword, activationLink });
-    await mailService.sendActivationMail(email, `${process.env.API_URL}/api/activate/${activationLink}`);
+    await sendActivationMail(email, `${process.env.API_URL}/api/activate/${activationLink}`);
 
     return createUserSession(user);
   }
