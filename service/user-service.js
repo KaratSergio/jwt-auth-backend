@@ -7,70 +7,73 @@ import { hashUserPassword, comparePassword } from '../utils/password-utils.js';
 import tokenService from './token-service.js';
 import userModel from '../models/user-model.js';
 
-class UserService {
-  async registration(email, password) {
-    console.log('Starting registration process');
+const registration = async (email, password) => {
+  console.log('Starting registration process');
 
-    const candidate = await checkIfUserExists(email);
-    if (candidate) {
-      throw ApiError.BadRequest(`User with email address ${email} already exists`);
-    }
-
-    const hashedPassword = await hashUserPassword(password);
-    const activationLink = uuidv4();
-
-    const user = await userModel.create({ email, password: hashedPassword, activationLink });
-    await sendActivationMail(email, `${process.env.API_URL}/api/activate/${activationLink}`);
-
-    return createUserSession(user);
+  const candidate = await checkIfUserExists(email);
+  if (candidate) {
+    throw ApiError.BadRequest(`User with email address ${email} already exists`);
   }
 
-  async login(email, password) {
-    const user = await checkIfUserExists(email);
-    if (!user) {
-      throw ApiError.BadRequest('User with this email does not exist');
-    }
+  const hashedPassword = await hashUserPassword(password);
+  const activationLink = uuidv4();
 
-    const isPassEquals = await comparePassword(password, user.password);
-    if (!isPassEquals) {
-      throw ApiError.BadRequest('Incorrect email or password');
-    }
+  const user = await userModel.create({ email, password: hashedPassword, activationLink });
+  await sendActivationMail(email, `${process.env.API_URL}/api/activate/${activationLink}`);
 
-    return createUserSession(user);
+  return createUserSession(user);
+};
+
+const login = async (email, password) => {
+  const user = await checkIfUserExists(email);
+  if (!user) {
+    throw ApiError.BadRequest('User with this email does not exist');
   }
 
-  async activate(activationLink) {
-    const user = await userModel.findOne({ activationLink });
-    if (!user) {
-      throw ApiError.BadRequest('Incorrect activation link');
-    }
-    user.isActivated = true;
-    await user.save();
+  const isPassEquals = await comparePassword(password, user.password);
+  if (!isPassEquals) {
+    throw ApiError.BadRequest('Incorrect email or password');
   }
 
-  async logout(refreshToken) {
-    const token = await tokenService.removeToken(refreshToken);
-    return token;
+  return createUserSession(user);
+};
+
+const activate = async (activationLink) => {
+  const user = await userModel.findOne({ activationLink });
+  if (!user) {
+    throw ApiError.BadRequest('Incorrect activation link');
   }
+  user.isActivated = true;
+  await user.save();
+};
 
-  async refresh(refreshToken) {
-    if (!refreshToken) {
-      throw ApiError.UnauthorizedError();
-    }
-    const userData = tokenService.validateRefreshToken(refreshToken);
-    const tokenFromDb = await tokenService.findToken(refreshToken);
-    if (!userData || !tokenFromDb) {
-      throw ApiError.UnauthorizedError();
-    }
-    const user = await userModel.findById(userData.id);
+const logout = async (refreshToken) => {
+  return await tokenService.removeToken(refreshToken);
+};
 
-    return createUserSession(user);
+const refresh = async (refreshToken) => {
+  if (!refreshToken) {
+    throw ApiError.UnauthorizedError();
   }
-
-  async getAllUsers() {
-    const users = await userModel.find();
-    return users;
+  const userData = tokenService.validateRefreshToken(refreshToken);
+  const tokenFromDb = await tokenService.findToken(refreshToken);
+  if (!userData || !tokenFromDb) {
+    throw ApiError.UnauthorizedError();
   }
-}
+  const user = await userModel.findById(userData.id);
 
-export default new UserService();
+  return createUserSession(user);
+};
+
+const getAllUsers = async () => {
+  return await userModel.find();
+};
+
+export default {
+  registration,
+  login,
+  activate,
+  logout,
+  refresh,
+  getAllUsers,
+};

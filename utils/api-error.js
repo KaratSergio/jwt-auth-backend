@@ -1,27 +1,10 @@
-export class ApiError extends Error {
-  #status;
-  #errors;
+export const ApiError = (status, message, errors = []) => {
+  const error = new Error(message);
+  error.status = status;
+  error.errors = errors;
 
-  constructor(status, message, errors = []) {
-    super(message);
-    this.#status = status;
-    this.#errors = errors;
-    this.name = 'ApiError';
-  }
+  return error;
+};
 
-  get status() {
-    return this.#status;
-  }
-
-  get errors() {
-    return this.#errors;
-  }
-
-  static UnauthorizedError() {
-    return new ApiError(401, 'User is not authorized');
-  }
-
-  static BadRequest(message, errors = []) {
-    return new ApiError(400, message, errors);
-  }
-}
+ApiError.UnauthorizedError = () => ApiError(401, 'User is not authorized');
+ApiError.BadRequest = (message, errors = []) => ApiError(400, message, errors);

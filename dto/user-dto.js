@@ -1,11 +1,5 @@
-export default class UserDto {
-  email;
-  id;
-  isActivated;
-
-  constructor(model) {
-    this.email = model.email;
-    this.id = model._id;
-    this.isActivated = model.isActivated;
-  }
-}
+export const UserDto = (model) => ({
+  email: model.email,
+  id: model._id,
+  isActivated: model.isActivated,
+});

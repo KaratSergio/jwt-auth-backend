@@ -1,9 +1,7 @@
-import { ApiError } from '../utils/api-error.js';
-
 export function errorHandler(err, req, res, next) {
   console.error(err);
 
-  if (err instanceof ApiError) {
+  if (err && err.status) {
     return res.status(err.status).json({ message: err.message, errors: err.errors });
   }
 
